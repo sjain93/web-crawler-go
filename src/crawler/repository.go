@@ -26,6 +26,8 @@ type Metadata struct {
 	CreatedAt      time.Time
 }
 
+// Publiv interface for the repository layer, if the datastore is changed
+// the new implementation simply needs to satisfy this interface
 type CrawlerRepoManager interface {
 	Save(crawlRec *Metadata) error
 	GetCrawlHistory() ([]Metadata, error)
@@ -37,6 +39,7 @@ type CrawlerRepository struct {
 	memstore config.MemoryStore
 }
 
+// Create a new repository instance
 func NewCrawlerRepository(inMemStore config.MemoryStore) (CrawlerRepoManager, error) {
 	if inMemStore != nil {
 		return &CrawlerRepository{
@@ -90,6 +93,8 @@ func (r *CrawlerRepository) GetCrawlHistory() ([]Metadata, error) {
 	return crawls, nil
 }
 
+// Returns all crawl requests from memory that match the provided Host
+// (in sorted order from most recent to last)
 func (r *CrawlerRepository) GetCrawlsByHost(crawlRec *Metadata) ([]Metadata, error) {
 	var crawls []Metadata
 

@@ -9,6 +9,7 @@ import (
 	"golang.org/x/net/html"
 )
 
+// Interface bound to the crawler object, exposes public functions
 type CrawlerIManager interface {
 	Process()
 	GetLinks() []string
@@ -42,6 +43,7 @@ type Config struct {
 	HttpClient   *http.Client
 }
 
+// Setup crawler config based on default values defined in utl
 func NewDefaultConfig() *Config {
 	return &Config{
 		WokerSetting: util.SetupDefaultConcurrency(),
@@ -69,7 +71,10 @@ func NewCrawler(
 	return c, nil
 }
 
+// The main orchestrator of the crawler
 func (c *crawlerInstance) Process() {
+	// Set up a loop that switches on if there are any links in the channel
+	// to process
 	go func() {
 		for {
 			select {
@@ -81,11 +86,15 @@ func (c *crawlerInstance) Process() {
 		}
 	}()
 
+	// initial call to the function that kicks off the parsing
 	c.beginLinkProcessing(c.initialURL)
+
+	// Global call to wait for any potential wait processes in progress
 	c.wg.Wait()
 	close(c.done)
 }
 
+// Public function to get links stored in the sync map
 func (c *crawlerInstance) GetLinks() []string {
 	links := []string{}
 	c.linkMap.Range(func(key, _ interface{}) bool {
@@ -95,6 +104,9 @@ func (c *crawlerInstance) GetLinks() []string {
 	return links
 }
 
+// Public function to get errors stored in the sync map
+// decision to store errors like this was done so that they could
+// be inspected when all threads were complete
 func (c *crawlerInstance) GetErrors() []error {
 	errors := []error{}
 	c.errMap.Range(func(key, _ interface{}) bool {
@@ -104,15 +116,18 @@ func (c *crawlerInstance) GetErrors() []error {
 	return errors
 }
 
+// Adding a semaphore for multithreaded locking against a buffered channel
 func (c *crawlerInstance) start() {
 	c.sem <- struct{}{}
 }
 
+// Decrement the waigroup and remove semaphore "lock"
 func (c *crawlerInstance) end() {
 	c.wg.Done()
 	<-c.sem
 }
 
+// Start a thread that gets a page's content via HTTP
 func (c *crawlerInstance) crawl(urlStr string) {
 	c.start()
 	defer c.end()
@@ -130,6 +145,8 @@ func (c *crawlerInstance) crawl(urlStr string) {
 	c.extract(res, urlStr)
 }
 
+// Pull out links from the HTTP response and dispatch them to be validated
+// and potentially added to the processing channel
 func (c *crawlerInstance) extract(res *http.Response, urlStr string) {
 	const (
 		htmlATag    = "a"
@@ -159,6 +176,8 @@ func (c *crawlerInstance) extract(res *http.Response, urlStr string) {
 	}
 }
 
+// Reference resolution, scheme verification and domain validation
+// before preparing it to be pulled and repeat the process as with its parent
 func (c *crawlerInstance) validateAndDispatch(link string, baseURL string) {
 	// if the link is departing the given base URL's domain, no need to process
 	if !util.IsSameDomain(link, baseURL) {
@@ -174,6 +193,7 @@ func (c *crawlerInstance) validateAndDispatch(link string, baseURL string) {
 		return
 	}
 
+	// We don't need schemes like mailto
 	if !util.IsHTTPScheme(absUrl) {
 		return
 	}
@@ -183,6 +203,9 @@ func (c *crawlerInstance) validateAndDispatch(link string, baseURL string) {
 	}
 }
 
+// Ensuring the link is new, adding to the waitgroup increment
+// to indicate that there is a new thread that the process will need
+// to wait for.
 func (c *crawlerInstance) beginLinkProcessing(absURL string) {
 	// check to see if link has already been stored in the linkmap
 	_, visited := c.linkMap.Load(absURL)

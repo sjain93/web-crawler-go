@@ -24,6 +24,7 @@ var (
 	ErrSvcProcessError   = errors.New("there was an error during the crawl process")
 )
 
+// Public interface for accessing the service
 type CrawlerServiceManager interface {
 	CrawlSite(crawlRec Metadata) ([]Metadata, error)
 	GetCrawlHistory() ([]Metadata, error)
@@ -45,6 +46,9 @@ func NewCrawlerService(r CrawlerRepoManager, l *zap.Logger) CrawlerServiceManage
 	return svc
 }
 
+// This service method validates the URL passed in, checks to see if there are any
+// previous crawls that match the seach criteria and optionally executes a new crawl
+// by initializing an instance of the crawler. Results are saved in the mem store
 func (s *crawlerService) CrawlSite(crawlRec Metadata) ([]Metadata, error) {
 	host, err := util.GetHost(crawlRec.InitialURL)
 	if err != nil {
@@ -69,6 +73,7 @@ func (s *crawlerService) CrawlSite(crawlRec Metadata) ([]Metadata, error) {
 	// Populate metadata with a new ID for this crawl
 	crawlRec.ID = uuid.NewString()
 
+	// init new crawler
 	crawler, err := instance.NewCrawler(
 		crawlRec.InitialURL,
 		instance.Config{
@@ -84,6 +89,7 @@ func (s *crawlerService) CrawlSite(crawlRec Metadata) ([]Metadata, error) {
 	// execute the crawl
 	crawler.Process()
 
+	// Populating the metadata object
 	errList := crawler.GetErrors()
 	crawlRec.ErrList = errList
 	if len(errList) > 0 {
@@ -104,6 +110,7 @@ func (s *crawlerService) CrawlSite(crawlRec Metadata) ([]Metadata, error) {
 	return []Metadata{crawlRec}, nil
 }
 
+// This method retrieves an existing crawl proviuded ID
 func (s *crawlerService) GetCrawl(id string) ([]Metadata, error) {
 	c := Metadata{ID: id}
 
@@ -117,6 +124,7 @@ func (s *crawlerService) GetCrawl(id string) ([]Metadata, error) {
 	return []Metadata{crawlRec}, nil
 }
 
+// This method retrieves all existing crawls being persisted
 func (s *crawlerService) GetCrawlHistory() ([]Metadata, error) {
 	return s.crawlerRepo.GetCrawlHistory()
 }
