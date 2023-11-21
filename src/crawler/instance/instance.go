@@ -62,7 +62,6 @@ func NewCrawler(
 }
 
 func (c *crawlerInstance) Process() {
-
 	go func() {
 		for {
 			select {
@@ -110,7 +109,7 @@ func (c *crawlerInstance) crawl(urlStr string) {
 	c.start()
 	defer c.end()
 
-	//fetch the page
+	// fetch the page
 	res, err := c.client.Get(urlStr)
 	if err != nil {
 		c.errMap.Store(
@@ -119,7 +118,7 @@ func (c *crawlerInstance) crawl(urlStr string) {
 		)
 		return
 	}
-	//scan the page
+	// scan the page
 	c.extract(res, urlStr)
 }
 
@@ -153,7 +152,7 @@ func (c *crawlerInstance) extract(res *http.Response, urlStr string) {
 }
 
 func (c *crawlerInstance) validateAndDispatch(link string, baseURL string) {
-	//if the link is departing the given base URL's domain, no need to process
+	// if the link is departing the given base URL's domain, no need to process
 	if !util.IsSameDomain(link, baseURL) {
 		return
 	}
@@ -174,7 +173,6 @@ func (c *crawlerInstance) validateAndDispatch(link string, baseURL string) {
 	if absUrl != "" && util.IsSameDomain(absUrl, c.initialURL) {
 		c.processLink(absUrl)
 	}
-
 }
 
 func (c *crawlerInstance) processLink(absURL string) {

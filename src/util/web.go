@@ -43,7 +43,6 @@ func IsHTTPScheme(urlStr string) bool {
 	}
 
 	return (parsedUrl.Scheme == "http" || parsedUrl.Scheme == "https")
-
 }
 
 func GetAbsoluteURL(urlStr, rootUrl string) (string, error) {
@@ -66,7 +65,6 @@ func GetAbsoluteURL(urlStr, rootUrl string) (string, error) {
 }
 
 func IsSameDomain(link, rootURL string) bool {
-
 	u, err := url.Parse(link)
 	if err != nil {
 		return false

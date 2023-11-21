@@ -69,7 +69,6 @@ func TestGetHost(t *testing.T) {
 }
 
 func TestGetAbsoluteURL(t *testing.T) {
-
 	testCases := map[string]struct {
 		current  string
 		root     string
@@ -107,11 +106,9 @@ func TestGetAbsoluteURL(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestIsHTTPScheme(t *testing.T) {
-
 	testCases := map[string]struct {
 		link     string
 		expected bool
@@ -140,7 +137,6 @@ func TestIsHTTPScheme(t *testing.T) {
 			assert.Equal(t, tc.expected, result)
 		})
 	}
-
 }
 
 func TestIsSameDomain(t *testing.T) {
@@ -165,7 +161,6 @@ func TestIsSameDomain(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			result := util.IsSameDomain(tc.current, tc.root)
 			assert.Equal(t, tc.expected, result)
-
 		})
 	}
 }

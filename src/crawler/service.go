@@ -17,10 +17,12 @@ var (
 )
 
 // service errors
-var ErrSvcRecordExists = errors.New("target record id already exists")
-var ErrSvcRecordNotFound = errors.New("target was not found")
-var ErrSvcHostNotFound = errors.New("provide resource is missing domain")
-var ErrSvcProcessError = errors.New("there was an error during the crawl process")
+var (
+	ErrSvcRecordExists   = errors.New("target record id already exists")
+	ErrSvcRecordNotFound = errors.New("target was not found")
+	ErrSvcHostNotFound   = errors.New("provide resource is missing domain")
+	ErrSvcProcessError   = errors.New("there was an error during the crawl process")
+)
 
 type CrawlerServiceManager interface {
 	CrawlSite(crawlRec Metadata) ([]Metadata, error)
@@ -44,7 +46,6 @@ func NewCrawlerService(r CrawlerRepoManager, l *zap.Logger) CrawlerServiceManage
 }
 
 func (s *crawlerService) CrawlSite(crawlRec Metadata) ([]Metadata, error) {
-
 	host, err := util.GetHost(crawlRec.InitialURL)
 	if err != nil {
 		return []Metadata{}, err
@@ -77,7 +78,7 @@ func (s *crawlerService) CrawlSite(crawlRec Metadata) ([]Metadata, error) {
 	}
 
 	s.logger.Sugar().Info("beginning new web crawl, this may take some time")
-	//execute the crawl
+	// execute the crawl
 	crawler.Process()
 
 	errList := crawler.GetErrors()

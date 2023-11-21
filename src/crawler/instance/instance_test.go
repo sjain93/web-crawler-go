@@ -24,7 +24,6 @@ func TestScraper(t *testing.T) {
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
-
 			c, err := instance.NewCrawler(tc.initialURL, tc.config)
 			assert.NoError(t, err)
 
@@ -44,10 +43,8 @@ func TestScraper(t *testing.T) {
 
 				assert.True(t, mainHost == linkHost)
 			}
-
 		})
 	}
-
 }
 
 func TestExtractAndDispatch(t *testing.T) {
@@ -62,12 +59,12 @@ func TestExtractAndDispatch(t *testing.T) {
 				"https://www.york.ac.uk/teaching/cws/wws/webpage4.html",
 				"https://www.york.ac.uk/teaching/cws/wws/webpage2.html",
 				"https://www.york.ac.uk/teaching/cws/wws/col3.html",
-			}},
+			},
+		},
 	}
 
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
-
 			cfg := instance.NewDefaultConfig()
 			c, err := instance.NewCrawler(tc.url, *cfg)
 			assert.NoError(t, err)

@@ -21,7 +21,6 @@ const (
 )
 
 func main() {
-
 	logger, err := zap.NewProduction()
 	if err != nil {
 		log.Fatalf("Error initializing logger: %v", err.Error())
@@ -106,7 +105,6 @@ func main() {
 
 		continue
 	}
-
 }
 
 func writeReportFile(report []crawler.Metadata) error {
@@ -114,5 +112,5 @@ func writeReportFile(report []crawler.Metadata) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile("report.json", file, 0644)
+	return os.WriteFile("report.json", file, 0o644)
 }

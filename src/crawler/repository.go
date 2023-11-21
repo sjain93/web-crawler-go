@@ -47,7 +47,6 @@ func NewCrawlerRepository(inMemStore config.MemoryStore) (CrawlerRepoManager, er
 	}
 
 	return &CrawlerRepository{}, ErrNoDatastore
-
 }
 
 // Records a crawl request
@@ -112,7 +111,6 @@ func (r *CrawlerRepository) GetCrawlsByHost(crawlRec *Metadata) []Metadata {
 		sort.Slice(crawls, func(i, j int) bool {
 			return crawls[i].CreatedAt.Before(crawls[j].CreatedAt)
 		})
-
 	}
 
 	return crawls
