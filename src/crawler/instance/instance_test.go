@@ -52,7 +52,7 @@ func TestExtractAndDispatch(t *testing.T) {
 		url             string
 		expectedResults []string
 	}{
-		"Happy Path - http": {
+		"Successful Dispatch of correct schemes": {
 			url: "https://www.york.ac.uk/teaching/cws/wws/webpage3.html",
 			expectedResults: []string{
 				"https://www.york.ac.uk/teaching/cws/wws/webpage1.html",

@@ -54,7 +54,10 @@ func (s *crawlerService) CrawlSite(crawlRec Metadata) ([]Metadata, error) {
 	s.logger.Sugar().Info("valid host")
 
 	// opportunity to early exit if crawler results exist already
-	prevCrawls := s.crawlerRepo.GetCrawlsByHost(&crawlRec)
+	prevCrawls, err := s.crawlerRepo.GetCrawlsByHost(&crawlRec)
+	if err != nil {
+		return []Metadata{}, err
+	}
 	if len(prevCrawls) > 0 && inTimeSpan(prevCrawls[0].CreatedAt) {
 		s.logger.Sugar().Infof(
 			"previous results exist for host - %v",

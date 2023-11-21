@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sjain93/web-crawler-go/config"
-	"gorm.io/gorm"
 )
 
 var (
@@ -31,11 +30,10 @@ type CrawlerRepoManager interface {
 	Save(crawlRec *Metadata) error
 	GetCrawlHistory() ([]Metadata, error)
 	GetCrawlByID(crawlRec *Metadata) (Metadata, error)
-	GetCrawlsByHost(crawlRec *Metadata) []Metadata
+	GetCrawlsByHost(crawlRec *Metadata) ([]Metadata, error)
 }
 
 type CrawlerRepository struct {
-	DB       *gorm.DB
 	memstore config.MemoryStore
 }
 
@@ -92,13 +90,13 @@ func (r *CrawlerRepository) GetCrawlHistory() ([]Metadata, error) {
 	return crawls, nil
 }
 
-func (r *CrawlerRepository) GetCrawlsByHost(crawlRec *Metadata) []Metadata {
+func (r *CrawlerRepository) GetCrawlsByHost(crawlRec *Metadata) ([]Metadata, error) {
 	var crawls []Metadata
 
 	for _, cR := range r.memstore {
 		storedRecord, ok := cR.(Metadata)
 		if !ok {
-			return crawls
+			return crawls, ErrInvalidDataType
 		}
 
 		if storedRecord.Host == crawlRec.Host {
@@ -109,9 +107,9 @@ func (r *CrawlerRepository) GetCrawlsByHost(crawlRec *Metadata) []Metadata {
 	// time ordered sort
 	if len(crawls) > 1 {
 		sort.Slice(crawls, func(i, j int) bool {
-			return crawls[i].CreatedAt.Before(crawls[j].CreatedAt)
+			return crawls[i].CreatedAt.After(crawls[j].CreatedAt)
 		})
 	}
 
-	return crawls
+	return crawls, nil
 }
