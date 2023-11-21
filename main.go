@@ -98,6 +98,11 @@ func main() {
 			os.Exit(0)
 		}
 
+		if len(report) == 0 {
+			logger.Sugar().Warn("nothing to write in report")
+			continue
+		}
+
 		if err = writeReportFile(report); err != nil {
 			logger.Sugar().Warnf("Error generating crawl report: %v", err.Error())
 			continue

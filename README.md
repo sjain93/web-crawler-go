@@ -1,57 +1,77 @@
-# 👨🏽‍💻 userservice
+### 👨🏽‍💻 **Sanchit Jain**
+---
+# 🌍 web-crawler-go
 ## Overview
 
-This repository demonstrates the implementation of the Service Repository Layer Pattern in the Go programming language. The Service Repository Layer Pattern is a software architectural pattern that separates the concerns of business logic (services) from data access (repositories) in an organized and maintainable way.
+#### A web crawling solution, leveraging Go's robust concurrency features 
 
-## Features
+The primary focus is on crawling websites within a specific domain, ensuring a systematic and controlled exploration of web resources. By `concurrently fetching and processing` web pages, the crawler maximizes efficiency, ensuring a swift and parallelized exploration of the target domain.
 
-- Separation of concerns: The pattern separates the business logic (services) from the data access (repositories), making the codebase more modular and easier to maintain. 
-  >This modularity is enforced via Go's implementation of interfaces, and can be found as a salient feature in both the repository and service layers.
-- Testability: Each layer can be unit-tested in isolation, leading to more reliable code.
-- Reusability: Services and repositories can be reused in different parts of the application.
-  
-> Check out `main.go` for an implementation of `Echo`'s graceful shutdown feature!
+The project also serves as an example of the `Service Repository Layer` pattern, the code is organized into distinct layers, promoting modularity and maintainability. The service layer encapsulates business logic, the repository layer handles data access and storage, and the web crawler integrates seamlessly within this structure.
+>This modularity is enforced via Go's implementation of interfaces, and can be found as a salient feature in both the repository and service layers.
 
-Key dependencies used in this project include:
-- [Echo v4](github.com/labstack/echo/v4 ) for routing and server middleware, its a great library that also supports
-features like authorization and context logging
-- [govalidator](github.com/asaskevich/govalidator) for HTTP request validation
-- [GORM](gorm.io/gorm) for Postgres ORM
-- [testify](github.com/stretchr/testify) for robust testing assertions
+
+## Components
+- **Web Crawler:**
+  Concurrency ensures optimal resource utilization, making it suitable for crawling large and complex domains. Multiple instances of this crawler can be initialized as needed.
+  - The crawler has a shared channel, and two `syncmaps` to record results and errors.
+  - It has a main process that orchestrates pulling links from the shared channel, fetching the link's page and extracting that page's links into the same channel.
+  - Safety is ensured via a channel `buffered` at the same capacity as the links channel, this channel tracks threads via `semaphores` (mutex for single thread).[See here for more details](https://medium.com/@deckarep/gos-extended-concurrency-semaphores-part-1-5eeabfa351ce)
+  > Web and Concurrency configuration settings can be tweaked, but have default values when a crawler is initialized within the service layer
+
+- **Service Layer:**
+  The service layer encapsulates the application's business logic, orchestrating the interactions between the command line interface, the web crawler, and the repository layer. It offers a high-level interface for managing and retrieving crawled data.
+
+- **Repository Layer:**
+  Responsible for data access and storage, the repository layer interfaces with the underlying data store. 
+  - This separation of concerns enhances maintainability, allowing for easy modifications to the data storage mechanism without affecting the core crawling logic. 
+  - It also serves to optimize the crawler by providing a means to persist previous crawl results; thus avoiding repeat processing.
+  > 🧠 The current implementation employs the use of an in memory store; but this can be swapped out for another form of persitence like PostGres, as long as the interfaces are satisfied
+
+- **Command Line Menu:**
+  The command line menu acts as a user-friendly interface for controlling the web crawler and accessing relevant information. Users can do the following:
+  - Initiate a new crawl (command line has built in validation for web schemes)
+  - Retrieve an old crawl (command line has built in validation for uuid)
+  - Get all the crawls stored in the repository of choice
+  > 📝 If this service as a whole were to fit into an overall microservice architecture, the interactive command line can be swapped out of a simple server and route requests to the service layer that remains unchanged.
 
 ## Repository Structure
 
-- `api/`: Holds the main application logic.
-  - `common/`: Contains common utilities that all subdomains can use.
-  - `user/`: The user subdomain.
-    - `handler/`: Repository implementations for data access.
-    - `model/`: Data models and structures used throughout the application.
-    - `repository/`: Repository implementations for data access.
-    - `service_test/`: Service tests in the "Testing Table" style.
+- `example_reports/`: Holds output in `json` from previous runs
+  - `screenshots/`: PNG screens of the UI running different modes of the crawler
+  - `*.json`: sample outputs from a session 
+- `src/`: Holds the main application logic.
+  - `util/`: Contains common utilities that all subdomains can use.
+    - `concurrency.go`: Helper functions to generate worker settings for any concurrent application.
+    - `web.go`: http and URL utility functions.
+    - `util_test.go`: testing the helpers.
+  - `crawler/`: The main subdomain for the crawler.
+    - `instance/`: Directory that houses the web crawler.
+      - `instance.go/`: Initializer and orchestration code for the crawler.
+      - `instance_test.go/`: Tests pertaining to the crawler instance.
+    - `repository.go`: Repository implementations for data access.
+    - `repository_test.go`: Repository tests.
+    - `service_test/`: Service tests.
     - `service/`: Service implementations containing business logic.
-- `config/`: Configuration files for the application.
-- `migrations/`: Contains the application database migration commands.
-- `routes/`: Contains the server's routes.
-- `main.go`: The main application file, and is the entry point for the application.
-
->📝 More subdomains will be added as the project expands. 
+- `config/`: Configuration files for memory store, PostGres connection details can be added here.
+  - `datastore.go`: Currently used to create an in memory data-store instance
+- `main.go`: The main application file, and is the entry point for the application and where the prompt UI is set up.
+> 👆 All tests are written in "table-driven test" style as described by [Dave Cheney](https://dave.cheney.net/2019/05/07/prefer-table-driven-tests)
 
 ## Getting Started
 
-#### Please note that this project was designed to be run with a Postgres database however, you may also init the project with an in-memory store to test it out.
-
 Follow these steps to get the project up and running:
 
-1. Clone the repository to your local machine:
+1. Clone the repository to your local machine _(or obtain a downloaded copy)_:
 
    ```
-   git clone https://github.com/sjain93/userservice.git
+   git clone https://github.com/sjain93/web-crawler-go.git
    ```
 
 2. Navigate to the project directory:
 
    ```
-   cd userservice
+   cd web-crawler-go
    ```
 
 3. Install any required dependencies:
@@ -60,64 +80,74 @@ Follow these steps to get the project up and running:
    go get -d ./...
    ```
 
-4. Customize the configuration files in the `config/` directory according to your needs.
-   > Note that this project uses `.env` files to configure the database. Check out the original `dotenv` project [here](https://github.com/motdotla/dotenv)
-
-   Here's a sample of my `.env` file that connects to my local Postgres instance
-
-   ```bash
-    DB_USER=`YOUR USER`
-    DB_PASSWORD=`YOUR PW`
-    DB_NAME=`YOUR DB NAME`
-    PORT=5432
-    SSL_mode=disable
-    ```
-
-5. To build and run the application with Postgres setup:
+4. To build and run the application:
 
    ```
    go run main.go
    ```
 
-6. To build and run the application with an in-memory store:
-
-   ```
-   go run main.go -noDB
-   ```
-
-   The `noDB` flag will configure the repository layer to use a in memory map
+   By default the repository layer is configured to use a in memory map
    found in the `config` package.
 
    ```go
    type MemoryStore map[string]interface{}
    ```
-## Making HTTP Requests
-Postman was used in the development of this API, however, with the server running,
-here are some cURL equivalents of HTTP calls that can be made:
+## Using the UI
+Running `main.go` presents the user with the following menu
+>**Note** that the output of all crawls is saved in a `report.json` file
 
-### `POST` to `/api/users`
-```cURL
-curl -X POST --location 'http://localhost:8080/api/users' \
---header 'Content-Type: application/json' \
---data-raw '{
-    "username": "Test User",
-    "email": "testuser@gmail.com"
-}'
+![main menu](example_reports/screenshots/sjain_crawler_ui_menu.png)
+
+### New Crawl
+Selecting a new crawl allows the user to input a web-page with a valid scheme (`http` or `https`). 
+A valid entry will kick off the crawl process
+
+![menu selection](example_reports/screenshots/sjain_crawler_input_validation.png)
+
+Correcting the input is marked with a ✅ indicator on the UI as below
+![menu selection](example_reports/screenshots/sjain_crawler_correct_input.png)
+
+A succesful run will display info-logs:
+
+![menu selection](example_reports/screenshots/sjain_crawler_monzo.png)
+
+
+As well as generate an output report file which is a json version of the following struct
+```go
+type Metadata struct {
+	ID             string
+	InitialURL     string
+	Host           string
+	CrawlResultSet []string
+	ErrList        []error
+	CreatedAt      time.Time
+}
 ```
+> Sample output for a Monzo crawl [here](example_reports/monzo.json)
 
-### `GET` a specific user from `/api/users/{{userID}}`
-```cURL
-curl --location 'http://localhost:8080/api/users/{{userID}}'
-```
->**Note** that the userID is currently implemented as a `MD5` hash of the `username`
-and `email` fields.
+If the user is trying to initiate a crawl that has already been run with the last **24 hours** a report will be generated from the previous crawl. 
+> Note that this functionality's effectivenes depends on the type of persistence used
 
----
-⚙️ `OpenAPI` and `Swagger` doc spec to come!
+Here is an example of that:
+
+![menu selection](example_reports/screenshots/sjain_crawler_cache.png)
+
+### Load Crawl
+Has a similar inferface as `New Crawl` however, you must use a `uiid` generated from a previous run within the same session of the programn to retrieve existing crawls.
+
+>**Note** that the ID for a crawl MetaData record is currently implemented as a `uuid`
+
+### All Crawls
+Will fetch and save all the crawl `Metadata` records saved in the datastore during the current session. No additional input neccesary.
+
+
+[Other screenshots](example_reports/screenshots)
+
 
 ## Usage
 
 In this pattern, services encapsulate the business logic of your application, while repositories provide data access methods. You can use the services in your application's handlers or controllers to perform business operations.
+
 
 Here's an example of how to use a service:
 
@@ -153,24 +183,15 @@ if err != nil {
 To run unit tests for services and repositories, use the following command:
 
 ```
-go test ./...
+go test ./... -timeout 200s
 ```
 ---
-⚙️ More tests to come!
-
-## Contributing
-
-Contributions are welcome! If you'd like to contribute to this project, please follow these guidelines:
-
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Make your changes and ensure they are properly tested.
-4. Submit a pull request to the `main` branch of this repository.
+⚙️ Note that some crawls can take up to 95 seconds, please ensure your environment is configured to timeout accordingly
 
 ## License
 
-This project is licensed under the Apache License - see the [LICENSE.md](./LICENSE.md) file for details.
+This project is licensed under the GNU General Public License - see the [LICENSE](./LICENSE) file for details.
 
 ---
 
-Feel free to explore the code and adapt it to your own project's needs. Happy coding! 🚀
+Made with ♡ in 🇨🇦
