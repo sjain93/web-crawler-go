@@ -3,12 +3,12 @@
 # 🌍 web-crawler-go
 ## Overview
 
-#### A web crawling solution, leveraging Go's robust concurrency features 
+#### A web crawling solution, leveraging Go's concurrency features 
 
 The primary focus is on crawling websites within a specific domain, ensuring a systematic and controlled exploration of web resources. By `concurrently fetching and processing` web pages, the crawler maximizes efficiency, ensuring a swift and parallelized exploration of the target domain.
 
 The project also serves as an example of the `Service Repository Layer` pattern, the code is organized into distinct layers, promoting modularity and maintainability. The service layer encapsulates business logic, the repository layer handles data access and storage, and the web crawler integrates seamlessly within this structure.
->This modularity is enforced via Go's implementation of interfaces, and can be found as a salient feature in both the repository and service layers.
+>This modularity is enforced via Go's implementation of interfaces, and can be found as a salient feature in the repository, crawler-instance, and service layers.
 
 
 ## Components
@@ -146,7 +146,7 @@ Will fetch and save all the crawl `Metadata` records saved in the datastore duri
 
 ## Usage
 
-In this pattern, services encapsulate the business logic of your application, while repositories provide data access methods. You can use the services in your application's handlers or controllers to perform business operations.
+In this pattern, services encapsulate the business logic of your application, while repositories provide data access methods. The service hides the implemnentation details of each crawl instance. Each call to the service method `CrawlSite` spans a new crawl object instancem, with everything that it needs to concurrently crawl the provided URL.
 
 
 Here's an example of how to use a service:
@@ -154,29 +154,67 @@ Here's an example of how to use a service:
 ```go
 // Import the necessary packages
 import (
-    "github.com/sjain93/userservice/api/user"
-    "github.com/sjain93/userservice/config"
+	"github.com/sjain93/web-crawler-go/config"
+	"github.com/sjain93/web-crawler-go/src/crawler"
+	"github.com/sjain93/web-crawler-go/src/util"
+	"go.uber.org/zap"
 )
+
+// Initialize a logger
+logger, err := zap.NewProduction()
+if err != nil {
+    // handle the error
+}
 
 // Initialize the userRepository with an in memory store
 memStore := config.GetInMemoryStore()
-userRepository, err := user.NewUserRepository(nil, memStore)
+crawlerRepo, err := crawler.NewCrawlerRepository(memStore)
 if err != nil {
     // handle the error
 }
 
 // Initialize a service
-userService := service.NewUserService(userRepository)
+crawlerSvc := crawler.NewCrawlerService(crawlerRepo, logger)
 
-// Create a new user
-newUser := user.User{Username: "John Doe", Email: "john@example.com"}
-createdUser, err := userService.CreateUser(newUser)
+// Crawling
+report, err = crawlerSvc.CrawlSite(crawler.Metadata{InitialURL: ""})
 if err != nil {
-    // Handle the error
-} else {
-    // User created successfully
+    // handle the error
 }
+
+// The report is a slice of the MetaData object - from here you can choose what to do
+
 ```
+
+Within a service, and using an instance of the crawler
+```go
+import (
+	"github.com/sjain93/web-crawler-go/src/crawler/instance"
+	"github.com/sjain93/web-crawler-go/src/util"
+)
+
+// init new crawler interface
+crawler, err := instance.NewCrawler(
+    crawlRec.InitialURL,
+    instance.Config{
+        WokerSetting: util.SetupDefaultConcurrency(),
+        HttpClient:   util.NewDefaultHTTPClient(),
+    },
+)
+if err != nil {
+    // handle the error
+}
+
+// execute the crawl
+crawler.Process()
+
+// Populating the metadata object
+errList := crawler.GetErrors()
+
+// Get the results of the crawl
+validLinks := crawler.GetLinks()
+```
+
 
 ## Testing
 
@@ -185,6 +223,9 @@ To run unit tests for services and repositories, use the following command:
 ```
 go test ./... -timeout 200s
 ```
+
+>- `https://monzo.com` took roughly 95s
+>- `https://www.koho.ca` took roughly 15s
 ---
 ⚙️ Note that some crawls can take up to 95 seconds, please ensure your environment is configured to timeout accordingly
 
