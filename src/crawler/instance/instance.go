@@ -9,6 +9,14 @@ import (
 	"golang.org/x/net/html"
 )
 
+type CrawlerIManager interface {
+	Process()
+	GetLinks() []string
+	GetErrors() []error
+	// ✋🏻 For Testing Only!
+	ExtractTestCall(resp *http.Response, url string)
+}
+
 // crawlerInstance is an internal implementation of a web crawler instance
 // each crawl site request spawns a new instance of the same
 type crawlerInstance struct {
@@ -44,9 +52,9 @@ func NewDefaultConfig() *Config {
 func NewCrawler(
 	initlUrl string,
 	config Config,
-) (*crawlerInstance, error) {
+) (CrawlerIManager, error) {
 	if config.WokerSetting == nil || config.HttpClient == nil {
-		return nil, errors.New("crawler has invalid or missing config")
+		return &crawlerInstance{}, errors.New("crawler has invalid or missing config")
 	}
 
 	c := &crawlerInstance{
@@ -73,7 +81,7 @@ func (c *crawlerInstance) Process() {
 		}
 	}()
 
-	c.processLink(c.initialURL)
+	c.beginLinkProcessing(c.initialURL)
 	c.wg.Wait()
 	close(c.done)
 }
@@ -171,11 +179,11 @@ func (c *crawlerInstance) validateAndDispatch(link string, baseURL string) {
 	}
 
 	if absUrl != "" && util.IsSameDomain(absUrl, c.initialURL) {
-		c.processLink(absUrl)
+		c.beginLinkProcessing(absUrl)
 	}
 }
 
-func (c *crawlerInstance) processLink(absURL string) {
+func (c *crawlerInstance) beginLinkProcessing(absURL string) {
 	// check to see if link has already been stored in the linkmap
 	_, visited := c.linkMap.Load(absURL)
 	if visited {
